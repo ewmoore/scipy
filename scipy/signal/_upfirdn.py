@@ -35,7 +35,7 @@
 
 import numpy as np
 
-from _upfirdn_apply import _apply, _output_len
+from ._upfirdn_apply import _apply, _output_len
 
 
 def _pad_h(h, up):
@@ -125,6 +125,7 @@ def upfirdn(x, h, up=1, down=1, axis=-1):
 
     Examples
     --------
+    >>> from scipy.signal import upfirdn
     >>> upfirdn([1,1,1], [1,1,1])   # FIR filter
     array([ 1.,  2.,  3.,  2.,  1.])
 
