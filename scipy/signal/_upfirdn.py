@@ -125,38 +125,43 @@ def upfirdn(x, h, up=1, down=1, axis=-1):
 
     Examples
     --------
+    Simple operations:
+
     >>> from scipy.signal import upfirdn
     >>> upfirdn([1,1,1], [1,1,1])   # FIR filter
     array([ 1.,  2.,  3.,  2.,  1.])
-
     >>> upfirdn([1, 2, 3], [1], 3)  # upsampling with zeros insertion
     array([ 1.,  0.,  0.,  2.,  0.,  0.,  3.,  0.,  0.])
-
     >>> upfirdn([1,2,3], [1,1,1], 3)  # upsampling with sample-and-hold
     array([ 1.,  1.,  1.,  2.,  2.,  2.,  3.,  3.,  3.])
-
     >>> upfirdn([1,1,1], [.5,1,.5], 2)  # linear interpolation
     array([ 0.5,  1. ,  1. ,  1. ,  1. ,  1. ,  0.5,  0. ])
-
-    >>> upfirdn(range(10), [1], 1, 3)  # decimation by 3
+    >>> upfirdn(np.arange(10), [1], 1, 3)  # decimation by 3
     array([ 0.,  3.,  6.,  9.])
-
-    >>> upfirdn(range(10), [.5,1,.5], 2, 3)  # linear interpolation, rate 2/3
+    >>> upfirdn(np.arange(10), [.5,1,.5], 2, 3)  # linear interp, rate 2/3
     array([ 0. ,  1. ,  2.5,  4. ,  5.5,  7. ,  8.5,  0. ])
 
-    # Apply single filter to multiple signals
-    >>> x = np.reshape(range(8), (4,2))
+    Apply a single filter to multiple signals:
+
+    >>> x = np.reshape(np.arange(8), (4,2))
+    >>> x
     array([[0, 1],
            [2, 3],
            [4, 5],
            [6, 7]])
+
+    Apply along the last dimension of ``x``:
+
     >>> h = [1, 1]
-    >>> upfirdn(x, h, 2)   # apply along last dimension of x
+    >>> upfirdn(x, h, 2)
     array([[ 0.,  0.,  1.,  1.],
            [ 2.,  2.,  3.,  3.],
            [ 4.,  4.,  5.,  5.],
            [ 6.,  6.,  7.,  7.]])
-    >>> upfirdn(x, h, 2, axis=0)  # apply along 0th dimension of x
+
+    Apply along the 0th dimension of ``x``:
+
+    >>> upfirdn(x, h, 2, axis=0)
     array([[ 0.,  1.],
            [ 0.,  1.],
            [ 2.,  3.],
@@ -165,6 +170,7 @@ def upfirdn(x, h, up=1, down=1, axis=-1):
            [ 4.,  5.],
            [ 6.,  7.],
            [ 6.,  7.]])
+
     """
     ufd = UpFIRDown(h, up, down)
     return np.apply_along_axis(ufd.apply, axis, x)
