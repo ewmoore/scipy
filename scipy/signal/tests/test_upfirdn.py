@@ -42,10 +42,9 @@ from scipy.signal._upfirdn import upfirdn, _output_len
 
 def upfirdn_naive(x, h, up=1, down=1):
     """Naive upfirdn processing in Python"""
-    from numpy import convolve
     out = np.zeros(len(x) * up)
     out[::up] = x
-    out = convolve(h, out)[::down][:_output_len(len(x), up, down, len(h))]
+    out = np.convolve(h, out)[::down][:_output_len(len(x), up, down, len(h))]
     return out
 
 
