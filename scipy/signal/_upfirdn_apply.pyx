@@ -148,3 +148,158 @@ cdef void _apply(DTYPE_t [:] x, DTYPE_t [:] h_trans_flip, DTYPE_t [:] out,
         t += down
         x_idx += t / up  # integer div
         t = t % up
+
+
+from numpy cimport npy_intp, npy_cdouble, NPY_INTP, NPY_DOUBLE, NPY_CDOUBLE
+cimport numpy as np
+
+cdef void upfirdn_ddd(char **args, npy_intp *dims, npy_intp *strides, void *innerloopdata) nogil:
+    cdef npy_intp len_x
+    cdef npy_intp len_h
+    cdef npy_intp h_per_phase
+    cdef npy_intp padded_len
+    cdef npy_intp x_idx = 0
+    cdef npy_intp y_idx = 0
+    cdef npy_intp h_idx = 0
+    cdef npy_intp t = 0
+    cdef npy_intp x_conv_idx = 0
+
+    cdef char* hc
+    cdef char* xc
+    cdef char* upc 
+    cdef char* dnc
+    cdef char* outc
+    cdef npy_intp up, dn
+    cdef npy_intp N, hn, xn, outn, hns, xns, ups, dns, outns,hs, xs, outs
+    cdef npy_intp k
+    cdef double *outp
+    cdef double out = 0.0
+    cdef double xi
+    cdef double hi
+  
+    N = dims[0]
+    len_h = dims[1]
+    len_x = dims[2]
+    len_out = dims[3]
+
+    hns = strides[0]
+    xns = strides[1]
+    ups = strides[2]
+    dns = strides[3]
+    outns = strides[4]
+    hs = strides[5]
+    xs = strides[6]
+    outs = strides[7]
+
+    # we only support 1D h, 0D up and 0D dn.
+    if hns != 0 or ups != 0 or dns != 0:
+        return
+
+    hc = args[0]
+    xc = args[1]
+    up = (<npy_intp*>args[2])[0]
+    dn = (<npy_intp*>args[3])[0]
+    outc = args[4]
+
+    h_per_phase = len_h / up
+    padded_len = len_x + h_per_phase - 1
+
+    for k in range(N):
+        x_idx = 0
+        y_idx = 0
+        h_idx = 0
+        t = 0
+        x_conv_idx = 0
+        while x_idx < len_x:
+            h_idx = t * h_per_phase
+            x_conv_idx = x_idx - h_per_phase + 1
+            if x_conv_idx < 0:
+                h_idx -= x_conv_idx
+                x_conv_idx = 0
+            out = 0.0
+            for x_conv_idx in range(x_conv_idx, x_idx + 1):
+                xi = (<double*>(xc + xs*x_conv_idx))[0]
+                hi = (<double*>(hc + hs*h_idx))[0]
+                out += xi * hi
+                h_idx += 1
+            # store and increment
+            outp = <double*>(outc + y_idx*outs)
+            outp[0] = out
+            y_idx += 1
+            t += dn
+            x_idx += t / up  # integer div
+            # which phase of the filter to use
+            t = t % up
+
+        # Use a second simplified loop to flush out the last bits
+        while x_idx < padded_len:
+            h_idx = t * h_per_phase
+            x_conv_idx = x_idx - h_per_phase + 1
+            out = 0.0
+            for x_conv_idx in range(x_conv_idx, x_idx + 1):
+                if x_conv_idx < len_x and x_conv_idx > 0:
+                    xi = (<double*>(xc + xs*x_conv_idx))[0]
+                    hi = (<double*>(hc + hs*h_idx))[0]
+                    out += xi * hi
+                h_idx += 1
+            outp = <double*>(outc + y_idx*outs)
+            outp[0] = out
+            y_idx += 1
+            t += dn
+            x_idx += t / up  # integer div
+            t = t % up
+        xc += xns
+        outc += outns
+
+cdef void upfirdn_dDD(char **args, npy_intp *dims, npy_intp *strides, void *innerloopdata) nogil:
+    pass
+
+cdef void upfirdn_DdD(char **args, npy_intp *dims, npy_intp *strides, void *innerloopdata) nogil:
+    pass
+
+cdef void upfirdn_DDD(char **args, npy_intp *dims, npy_intp *strides, void *innerloopdata) nogil:
+    pass
+
+cdef np.PyUFuncGenericFunction fun[4]
+fun[0] = upfirdn_ddd
+fun[1] = upfirdn_dDD
+fun[2] = upfirdn_DdD
+fun[3] = upfirdn_DDD
+cdef char types[20]
+types[0] = NPY_DOUBLE
+types[1] = NPY_DOUBLE
+types[2] = NPY_INTP
+types[3] = NPY_INTP
+types[4] = NPY_DOUBLE
+types[5] = NPY_DOUBLE
+types[6] = NPY_CDOUBLE
+types[7] = NPY_INTP
+types[8] = NPY_INTP
+types[9] = NPY_CDOUBLE
+types[10] = NPY_CDOUBLE
+types[11] = NPY_DOUBLE
+types[12] = NPY_INTP
+types[13] = NPY_INTP
+types[14] = NPY_CDOUBLE
+types[15] = NPY_CDOUBLE
+types[16] = NPY_CDOUBLE
+types[17] = NPY_INTP
+types[18] = NPY_INTP
+types[19] = NPY_CDOUBLE
+cdef int ntypes = 4
+cdef int nin = 4
+cdef int nout = 1
+cdef int identity = 0
+cdef char* name = 'upfirdn'
+cdef char* doc = 'docstring'
+cdef char* sig = '(m),(n),(),()->(p)'
+cdef void* vd[4]
+vd[0] = <void*>NULL
+vd[1] = <void*>NULL
+vd[2] = <void*>NULL
+vd[3] = <void*>NULL
+
+np.import_array()
+np.import_ufunc()
+upfirdn = np.PyUFunc_FromFuncAndDataAndSignature(fun, vd, types, ntypes, nin, nout, identity, name, doc, 0, sig)
+

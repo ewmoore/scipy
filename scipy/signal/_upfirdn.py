@@ -35,7 +35,8 @@
 
 import numpy as np
 
-from ._upfirdn_apply import UpFIRDown, _output_len
+from ._upfirdn_apply import UpFIRDown, _output_len, _pad_h
+import _upfirdn_apply
 
 
 def upfirdn(x, h, up=1, down=1, axis=-1):
@@ -127,3 +128,16 @@ def upfirdn(x, h, up=1, down=1, axis=-1):
     """
     ufd = UpFIRDown(h, up, down)
     return np.apply_along_axis(ufd.apply, axis, x)
+
+def gupfirdn(x, h, up=1, down=1, axis=-1):
+    # no input validation yet...
+    hnew = _pad_h(h, up)
+    output_len =  _output_len(x.shape[axis] + len(hnew) // up - 1, up, down, 0)
+    x = np.rollaxis(x, axis, x.ndim)
+    output_shape = list(x.shape)
+    output_shape[-1] = output_len
+    output = np.zeros(output_shape, 'd') # fix dtype
+    output = _upfirdn_apply.upfirdn(hnew, x, up, down, output)
+    return np.rollaxis(output, -1, axis)
+    
+ 

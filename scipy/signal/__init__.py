@@ -275,7 +275,7 @@ from __future__ import division, print_function, absolute_import
 from . import sigtools
 from .waveforms import *
 from ._max_len_seq import max_len_seq
-from ._upfirdn import upfirdn
+from ._upfirdn import upfirdn, gupfirdn
 
 # The spline module (a C extension) provides:
 #     cspline2d, qspline2d, sepfir2d, symiirord1, symiirord2
